@@ -970,6 +970,142 @@ function Linux.Create(config)
             }
         end
 
+        function TabElements.Slider(config)
+            elementOrder = elementOrder + 1
+            local Slider = Linux.Instance("Frame", {
+                Parent = ElementContainer,
+                BackgroundColor3 = Linux.Theme.Element,
+                Size = UDim2.new(1, -5, 0, 40),
+                ZIndex = 1,
+                LayoutOrder = elementOrder
+            })
+
+            Linux.Instance("UICorner", {
+                Parent = Slider,
+                CornerRadius = UDim.new(0, 4)
+            })
+
+            local Label = Linux.Instance("TextLabel", {
+                Parent = Slider,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(0.6, 0, 0, 20),
+                Position = UDim2.new(0, 5, 0, 2),
+                Font = Enum.Font.SourceSans,
+                Text = config.Name,
+                TextColor3 = Linux.Theme.Text,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 1
+            })
+
+            local ValueLabel = Linux.Instance("TextLabel", {
+                Parent = Slider,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(0.4, -5, 0, 20),
+                Position = UDim2.new(0.6, 0, 0, 2),
+                Font = Enum.Font.SourceSans,
+                Text = tostring(config.Default or config.Min or 0),
+                TextColor3 = Linux.Theme.Text,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Right,
+                ZIndex = 1
+            })
+
+            local SliderBar = Linux.Instance("Frame", {
+                Parent = Slider,
+                BackgroundColor3 = Linux.Theme.Toggle,
+                Size = UDim2.new(1, -10, 0, 6),
+                Position = UDim2.new(0, 5, 0, 28),
+                ZIndex = 1
+            })
+
+            Linux.Instance("UICorner", {
+                Parent = SliderBar,
+                CornerRadius = UDim.new(1, 0)
+            })
+
+            local FillBar = Linux.Instance("Frame", {
+                Parent = SliderBar,
+                BackgroundColor3 = Linux.Theme.Accent,
+                Size = UDim2.new(0, 0, 1, 0),
+                Position = UDim2.new(0, 0, 0, 0),
+                ZIndex = 1
+            })
+
+            Linux.Instance("UICorner", {
+                Parent = FillBar,
+                CornerRadius = UDim.new(1, 0)
+            })
+
+            local Knob = Linux.Instance("Frame", {
+                Parent = SliderBar,
+                BackgroundColor3 = Color3.fromRGB(255, 255, 250),
+                Size = UDim2.new(0, 12, 0, 12),
+                Position = UDim2.new(0, 0, 0, -3),
+                ZIndex = 2
+            })
+
+            Linux.Instance("UICorner", {
+                Parent = Knob,
+                CornerRadius = UDim.new(1, 0)
+            })
+
+            local Min = config.Min or 0
+            local Max = config.Max or 100
+            local Default = config.Default or Min
+            local Value = Default
+
+            local function UpdateSlider(pos)
+                local barSize = SliderBar.AbsoluteSize.X
+                local relativePos = math.clamp((pos - SliderBar.AbsolutePosition.X) / barSize, 0, 1)
+                Value = Min + (Max - Min) * relativePos
+                Value = math.floor(Value + 0.5)
+                Knob.Position = UDim2.new(relativePos, -6, 0, -3)
+                FillBar.Size = UDim2.new(relativePos, 0, 1, 0)
+                ValueLabel.Text = tostring(Value)
+                spawn(function() Linux:SafeCallback(config.Callback, Value) end)
+            end
+
+            local draggingSlider = false
+
+            Slider.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingSlider = true
+                    UpdateSlider(input.Position.X)
+                end
+            end)
+
+            Slider.InputChanged:Connect(function(input)
+                if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and draggingSlider then
+                    UpdateSlider(input.Position.X)
+                end
+            end)
+
+            Slider.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingSlider = false
+                end
+            end)
+
+            local function SetValue(newValue)
+                newValue = math.clamp(newValue, Min, Max)
+                Value = math.floor(newValue + 0.5)
+                local relativePos = (Value - Min) / (Max - Min)
+                Knob.Position = UDim2.new(relativePos, -6, 0, -3)
+                FillBar.Size = UDim2.new(relativePos, 0, 1, 0)
+                ValueLabel.Text = tostring(Value)
+                spawn(function() Linux:SafeCallback(config.Callback, Value) end)
+            end
+
+            SetValue(Default)
+
+            return {
+                Instance = Slider,
+                SetValue = SetValue,
+                GetValue = function() return Value end
+            }
+        end
+
         function TabElements.Input(config)
             elementOrder = elementOrder + 1
             local Input = Linux.Instance("Frame", {
@@ -1302,7 +1438,7 @@ function Linux.Create(config)
             local ColorPicker = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                Size = UDim2.new(1, -5, 0, 100),
+                Size = UDim2.new(1, -5, 0, 80),
                 ZIndex = 1,
                 LayoutOrder = elementOrder
             })
@@ -1366,45 +1502,6 @@ function Linux.Create(config)
                 CornerRadius = UDim.new(1, 0)
             })
 
-            local HueSlider = Linux.Instance("Frame", {
-                Parent = ColorPicker,
-                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                Size = UDim2.new(1, -10, 0, 6),
-                Position = UDim2.new(0, 5, 0, 90),
-                ZIndex = 1
-            })
-
-            Linux.Instance("UICorner", {
-                Parent = HueSlider,
-                CornerRadius = UDim.new(1, 0)
-            })
-
-            local HueGradient = Linux.Instance("UIGradient", {
-                Parent = HueSlider,
-                Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-                    ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
-                    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
-                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
-                    ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
-                    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
-                })
-            })
-
-            local HueKnob = Linux.Instance("Frame", {
-                Parent = HueSlider,
-                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                Size = UDim2.new(0, 12, 0, 12),
-                Position = UDim2.new(0, -6, 0, -3),
-                ZIndex = 2
-            })
-
-            Linux.Instance("UICorner", {
-                Parent = HueKnob,
-                CornerRadius = UDim.new(1, 0)
-            })
-
             local Hue = 0
             local Saturation = 1
             local Value = 1
@@ -1452,36 +1549,6 @@ function Linux.Create(config)
                 end
             end)
 
-            local draggingHue = false
-            HueSlider.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    draggingHue = true
-                    local posX = input.Position.X
-                    local hueSize = HueSlider.AbsoluteSize.X
-                    local relativeX = math.clamp((posX - HueSlider.AbsolutePosition.X) / hueSize, 0, 1)
-                    Hue = relativeX
-                    HueKnob.Position = UDim2.new(relativeX, -6, 0, -3)
-                    UpdateColor()
-                end
-            end)
-
-            HueSlider.InputChanged:Connect(function(input)
-                if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and draggingHue then
-                    local posX = input.Position.X
-                    local hueSize = HueSlider.AbsoluteSize.X
-                    local relativeX = math.clamp((posX - HueSlider.AbsolutePosition.X) / hueSize, 0, 1)
-                    Hue = relativeX
-                    HueKnob.Position = UDim2.new(relativeX, -6, 0, -3)
-                    UpdateColor()
-                end
-            end)
-
-            HueSlider.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    draggingHue = false
-                end
-            end)
-
             UpdateColor()
 
             local function SetColor(newColor)
@@ -1489,7 +1556,6 @@ function Linux.Create(config)
                 Hue = h
                 Saturation = s
                 Value = v
-                HueKnob.Position = UDim2.new(Hue, -6, 0, -3)
                 PaletteKnob.Position = UDim2.new(Saturation, -4, 1 - Value, -4)
                 UpdateColor()
             end
