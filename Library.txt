@@ -4,15 +4,20 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
+local function DarkenColor(color, factor)
+    local h, s, v = color:ToHSV()
+    return Color3.fromHSV(h, s, math.max(0, v * factor))
+end
+
 local Linux = {
     Theme = {
-        Background = Color3.fromRGB(24, 24, 24),
-        Element = Color3.fromRGB(28, 28, 28),
+        Background = DarkenColor(Color3.fromRGB(24, 24, 24), 0.8),
+        Element = DarkenColor(Color3.fromRGB(28, 28, 28), 0.8),
         Accent = Color3.fromRGB(80, 120, 255),
         Text = Color3.fromRGB(180, 180, 180),
-        Toggle = Color3.fromRGB(40, 40, 40),
-        TabInactive = Color3.fromRGB(28, 28, 28),
-        DropdownOption = Color3.fromRGB(30, 30, 30)
+        Toggle = DarkenColor(Color3.fromRGB(40, 40, 40), 0.8),
+        TabInactive = DarkenColor(Color3.fromRGB(28, 28, 28), 0.8),
+        DropdownOption = DarkenColor(Color3.fromRGB(30, 30, 30), 0.8)
     }
 }
 
@@ -1433,7 +1438,7 @@ function Linux.Create(config)
             local ColorPicker = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                Size = UDim2.new(1, -5, 0, 110),
+                Size = UDim2.new(1, -5, 0, 130),
                 ZIndex = 1,
                 LayoutOrder = elementOrder
             })
@@ -1527,7 +1532,7 @@ function Linux.Create(config)
                 Parent = ColorPicker,
                 BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                 Size = UDim2.new(0, 30, 0, 30),
-                Position = UDim2.new(1, -35, 0, 55),
+                Position = UDim2.new(0.5, -15, 0, 100),
                 ZIndex = 1
             })
 
