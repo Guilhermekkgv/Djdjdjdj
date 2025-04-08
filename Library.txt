@@ -11,26 +11,16 @@ end
 
 local Linux = {
     Theme = {
-        Name = "Amethyst",
         Background = DarkenColor(Color3.fromRGB(24, 24, 24), 0.8),
-        Element = Color3.fromRGB(140, 120, 160),
-        Accent = Color3.fromRGB(97, 62, 167),
+        Element = DarkenColor(Color3.fromRGB(28, 28, 28), 0.8),
+        Accent = Color3.fromRGB(80, 120, 255),
         Text = Color3.fromRGB(180, 180, 180),
         Toggle = DarkenColor(Color3.fromRGB(40, 40, 40), 0.8),
-        TabInactive = Color3.fromRGB(160, 140, 180),
+        TabInactive = DarkenColor(Color3.fromRGB(28, 28, 28), 0.8),
         DropdownOption = DarkenColor(Color3.fromRGB(30, 30, 30), 0.8),
-
-        AcrylicMain = Color3.fromRGB(20, 20, 20),
-        AcrylicBorder = Color3.fromRGB(110, 90, 130),
-        AcrylicGradient = ColorSequence.new(Color3.fromRGB(85, 57, 139), Color3.fromRGB(40, 25, 65)),
-        AcrylicNoise = 0.92,
-
-        TitleBarLine = Color3.fromRGB(95, 75, 110),
-        Tab = Color3.fromRGB(160, 140, 180),
-
-        ElementBorder = Color3.fromRGB(60, 50, 70),
-        InElementBorder = Color3.fromRGB(100, 90, 110),
-        ElementTransparency = 0.87
+        Border = Color3.fromRGB(50, 50, 50),
+        Shadow = Color3.fromRGB(0, 0, 0),
+        Glow = Color3.fromRGB(100, 150, 255)
     }
 }
 
@@ -40,6 +30,105 @@ function Linux.Instance(class, props)
         inst[k] = v
     end
     return inst
+end
+
+function Linux:ApplyShadow(element, shadowColor, offset, transparency)
+    local shadow = Linux.Instance("Frame", {
+        Parent = element,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 10, 1, 10),
+        Position = UDim2.new(0, offset, 0, offset),
+        ZIndex = element.ZIndex - 1
+    })
+
+    local shadowInner = Linux.Instance("Frame", {
+        Parent = shadow,
+        BackgroundColor3 = shadowColor or Linux.Theme.Shadow,
+        BackgroundTransparency = transparency or 0.5,
+        Size = UDim2.new(1, 0, 1, 0),
+        BorderSizePixel = 0
+    })
+
+    Linux.Instance("UICorner", {
+        Parent = shadowInner,
+        CornerRadius = UDim.new(0, 5)
+    })
+
+    return shadow
+end
+
+function Linux:ApplyGradient(element, colorSequence, rotation)
+    local gradient = Linux.Instance("UIGradient", {
+        Parent = element,
+        Color = colorSequence or ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+            ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+        }),
+        Rotation = rotation or 90
+    })
+    return gradient
+end
+
+function Linux:ApplyBorder(element, borderColor, thickness, transparency)
+    local stroke = Linux.Instance("UIStroke", {
+        Parent = element,
+        Color = borderColor or Linux.Theme.Border,
+        Thickness = thickness or 1,
+        Transparency = transparency or 0,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    })
+    return stroke
+end
+
+function Linux:ApplyHoverEffect(element, hoverColor, originalColor, scaleIncrease)
+    local originalSize = element.Size
+    local hoverTweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local originalTweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+
+    element.MouseEnter:Connect(function()
+        TweenService:Create(element, hoverTweenInfo, {
+            BackgroundColor3 = hoverColor or Linux.Theme.Accent,
+            Size = UDim2.new(
+                originalSize.X.Scale, originalSize.X.Offset + (scaleIncrease or 2),
+                originalSize.Y.Scale, originalSize.Y.Offset + (scaleIncrease or 2)
+            )
+        }):Play()
+    end)
+
+    element.MouseLeave:Connect(function()
+        TweenService:Create(element, originalTweenInfo, {
+            BackgroundColor3 = originalColor or element.BackgroundColor3,
+            Size = originalSize
+        }):Play()
+    end)
+end
+
+function Linux:ApplyRippleEffect(element, rippleColor)
+    local ripple = Linux.Instance("Frame", {
+        Parent = element,
+        BackgroundColor3 = rippleColor or Linux.Theme.Glow,
+        BackgroundTransparency = 0.5,
+        Size = UDim2.new(0, 0, 0, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        ZIndex = element.ZIndex + 1,
+        ClipsDescendants = true
+    })
+
+    Linux.Instance("UICorner", {
+        Parent = ripple,
+        CornerRadius = UDim.new(1, 0)
+    })
+
+    local rippleTweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    TweenService:Create(ripple, rippleTweenInfo, {
+        Size = UDim2.new(2, 0, 2, 0),
+        BackgroundTransparency = 1
+    }):Play()
+
+    task.delay(0.5, function()
+        ripple:Destroy()
+    end)
 end
 
 function Linux:SafeCallback(Function, ...)
@@ -73,28 +162,22 @@ function Linux:Notify(config)
 
     local Notification = Linux.Instance("Frame", {
         Parent = NotificationHolder,
-        BackgroundColor3 = Linux.Theme.AcrylicMain,
-        BackgroundTransparency = Linux.Theme.ElementTransparency,
+        BackgroundColor3 = Linux.Theme.Background,
         Size = UDim2.new(0, notificationWidth, 0, notificationHeight),
         Position = UDim2.new(1, 10, 1, -notificationHeight - 10),
-        ZIndex = 100,
-        BorderColor3 = Linux.Theme.AcrylicBorder,
-        BorderSizePixel = 1
-    })
-
-    local Gradient = Linux.Instance("UIGradient", {
-        Parent = Notification,
-        Color = Linux.Theme.AcrylicGradient,
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0),
-            NumberSequenceKeypoint.new(1, Linux.Theme.AcrylicNoise)
-        })
+        ZIndex = 100
     })
 
     Linux.Instance("UICorner", {
         Parent = Notification,
         CornerRadius = UDim.new(0, 5)
     })
+
+    Linux:ApplyShadow(Notification, Linux.Theme.Shadow, 5, 0.5)
+    Linux:ApplyGradient(Notification, ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Linux.Theme.Background),
+        ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Background, 0.8))
+    }), 45)
 
     local TitleLabel = Linux.Instance("TextLabel", {
         Parent = Notification,
@@ -186,39 +269,30 @@ function Linux.Create(config)
 
     local Main = Linux.Instance("Frame", {
         Parent = LinuxUI,
-        BackgroundColor3 = Linux.Theme.AcrylicMain,
-        BackgroundTransparency = Linux.Theme.ElementTransparency,
+        BackgroundColor3 = Linux.Theme.Background,
         Size = uiSize,
         Position = UDim2.new(0.5, -uiSize.X.Offset / 2, 0.5, -uiSize.Y.Offset / 2),
         Active = true,
         Draggable = true,
-        ZIndex = 1,
-        BorderColor3 = Linux.Theme.AcrylicBorder,
-        BorderSizePixel = 1
-    })
-
-    local Gradient = Linux.Instance("UIGradient", {
-        Parent = Main,
-        Color = Linux.Theme.AcrylicGradient,
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0),
-            NumberSequenceKeypoint.new(1, Linux.Theme.AcrylicNoise)
-        })
+        ZIndex = 1
     })
 
     Linux.Instance("UICorner", {
         Parent = Main,
         CornerRadius = UDim.new(0, 5)
     })
+
+    Linux:ApplyShadow(Main, Linux.Theme.Shadow, 5, 0.5)
+    Linux:ApplyGradient(Main, ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Linux.Theme.Background),
+        ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Background, 0.7))
+    }), 45)
 
     local TopBar = Linux.Instance("Frame", {
         Parent = Main,
         BackgroundColor3 = Linux.Theme.Element,
-        BackgroundTransparency = Linux.Theme.ElementTransparency,
         Size = UDim2.new(1, 0, 0, 25),
-        ZIndex = 2,
-        BorderColor3 = Linux.Theme.ElementBorder,
-        BorderSizePixel = 1
+        ZIndex = 2
     })
 
     Linux.Instance("UICorner", {
@@ -226,14 +300,11 @@ function Linux.Create(config)
         CornerRadius = UDim.new(0, 5)
     })
 
-    local TitleBarLineFrame = Linux.Instance("Frame", {
-        Parent = TopBar,
-        BackgroundColor3 = Linux.Theme.TitleBarLine,
-        Size = UDim2.new(1, 0, 0, 1),
-        Position = UDim2.new(0, 0, 1, -1),
-        ZIndex = 2,
-        BorderSizePixel = 0
-    })
+    Linux:ApplyGradient(TopBar, ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+        ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+    }), 90)
+    Linux:ApplyBorder(TopBar, Linux.Theme.Border, 1, 0.2)
 
     local Title = Linux.Instance("TextLabel", {
         Parent = TopBar,
@@ -268,6 +339,8 @@ function Linux.Create(config)
         ZIndex = 3
     })
 
+    Linux:ApplyHoverEffect(MinimizeButton, Linux.Theme.Accent, Linux.Theme.Element, 2)
+
     local CloseButton = Linux.Instance("TextButton", {
         Parent = TopBar,
         BackgroundTransparency = 1,
@@ -287,6 +360,8 @@ function Linux.Create(config)
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ZIndex = 3
     })
+
+    Linux:ApplyHoverEffect(CloseButton, Linux.Theme.Accent, Linux.Theme.Element, 2)
 
     local TabsBar = Linux.Instance("Frame", {
         Parent = Main,
@@ -373,8 +448,7 @@ function Linux.Create(config)
 
         local TabBtn = Linux.Instance("TextButton", {
             Parent = TabHolder,
-            BackgroundColor3 = Linux.Theme.Tab,
-            BackgroundTransparency = Linux.Theme.ElementTransparency,
+            BackgroundColor3 = Linux.Theme.TabInactive,
             Size = UDim2.new(1, -5, 0, 28),
             Font = Enum.Font.SourceSans,
             Text = "",
@@ -382,15 +456,21 @@ function Linux.Create(config)
             TextSize = 14,
             ZIndex = 2,
             AutoButtonColor = false,
-            LayoutOrder = tabIndex,
-            BorderColor3 = Linux.Theme.ElementBorder,
-            BorderSizePixel = 1
+            LayoutOrder = tabIndex
         })
 
         Linux.Instance("UICorner", {
             Parent = TabBtn,
             CornerRadius = UDim.new(0, 4)
         })
+
+        Linux:ApplyShadow(TabBtn, Linux.Theme.Shadow, 3, 0.6)
+        Linux:ApplyGradient(TabBtn, ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Linux.Theme.TabInactive),
+            ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.TabInactive, 0.9))
+        }), 90)
+        Linux:ApplyBorder(TabBtn, Linux.Theme.Border, 1, 0.3)
+        Linux:ApplyHoverEffect(TabBtn, Linux.Theme.Accent, Linux.Theme.TabInactive, 2)
 
         local TabIcon
         if config.Icon and config.Icon.Enabled then
@@ -470,12 +550,14 @@ function Linux.Create(config)
                 if tab.Icon then
                     tab.Icon.ImageColor3 = Color3.fromRGB(150, 150, 150)
                 end
+                TweenService:Create(tab.Button, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundColor3 = Linux.Theme.TabInactive}):Play()
             end
             TabContent.Visible = true
             TabText.TextColor3 = Color3.fromRGB(255, 255, 255)
             if TabIcon then
                 TabIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
             end
+            TweenService:Create(TabBtn, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundColor3 = Linux.Theme.Accent}):Play()
             CurrentTab = tabIndex
         end)
 
@@ -493,6 +575,7 @@ function Linux.Create(config)
             if TabIcon then
                 TabIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
             end
+            TweenService:Create(TabBtn, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {BackgroundColor3 = Linux.Theme.Accent}):Play()
             CurrentTab = tabIndex
         end
 
@@ -504,18 +587,23 @@ function Linux.Create(config)
             local BtnFrame = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 30),
                 ZIndex = 1,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = BtnFrame,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(BtnFrame, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(BtnFrame, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(BtnFrame, Linux.Theme.Border, 1, 0.3)
+            Linux:ApplyHoverEffect(BtnFrame, Linux.Theme.Accent, Linux.Theme.Element, 2)
 
             local Btn = Linux.Instance("TextButton", {
                 Parent = BtnFrame,
@@ -547,6 +635,7 @@ function Linux.Create(config)
             })
 
             Btn.MouseButton1Click:Connect(function()
+                Linux:ApplyRippleEffect(BtnFrame)
                 TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3 = Linux.Theme.Accent}):Play()
                 spawn(function() Linux:SafeCallback(config.Callback) end)
                 wait(0.1)
@@ -561,18 +650,23 @@ function Linux.Create(config)
             local Toggle = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 30),
                 ZIndex = 1,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = Toggle,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(Toggle, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(Toggle, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(Toggle, Linux.Theme.Border, 1, 0.3)
+            Linux:ApplyHoverEffect(Toggle, Linux.Theme.Accent, Linux.Theme.Element, 2)
 
             local Label = Linux.Instance("TextLabel", {
                 Parent = Toggle,
@@ -592,9 +686,7 @@ function Linux.Create(config)
                 BackgroundColor3 = Linux.Theme.Toggle,
                 Size = UDim2.new(0, 40, 0, 20),
                 Position = UDim2.new(1, -45, 0, 5),
-                ZIndex = 1,
-                BorderColor3 = Linux.Theme.InElementBorder,
-                BorderSizePixel = 1
+                ZIndex = 1
             })
 
             Linux.Instance("UICorner", {
@@ -602,12 +694,13 @@ function Linux.Create(config)
                 CornerRadius = UDim.new(1, 0)
             })
 
+            Linux:ApplyBorder(ToggleBox, Linux.Theme.Border, 1, 0.3)
+
             local ToggleFill = Linux.Instance("Frame", {
                 Parent = ToggleBox,
                 BackgroundColor3 = Linux.Theme.Toggle,
                 Size = UDim2.new(0, 0, 1, 0),
-                ZIndex = 1,
-                BorderSizePixel = 0
+                ZIndex = 1
             })
 
             Linux.Instance("UICorner", {
@@ -615,20 +708,25 @@ function Linux.Create(config)
                 CornerRadius = UDim.new(1, 0)
             })
 
+            Linux:ApplyGradient(ToggleFill, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Toggle),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Toggle, 0.9))
+            }), 90)
+
             local Knob = Linux.Instance("Frame", {
                 Parent = ToggleBox,
                 BackgroundColor3 = Color3.fromRGB(150, 150, 150),
                 Size = UDim2.new(0, 16, 0, 16),
                 Position = UDim2.new(0, 2, 0, 2),
-                ZIndex = 2,
-                BorderColor3 = Linux.Theme.InElementBorder,
-                BorderSizePixel = 1
+                ZIndex = 2
             })
 
             Linux.Instance("UICorner", {
                 Parent = Knob,
                 CornerRadius = UDim.new(1, 0)
             })
+
+            Linux:ApplyShadow(Knob, Linux.Theme.Shadow, 2, 0.7)
 
             local State = config.Default or false
 
@@ -647,6 +745,7 @@ function Linux.Create(config)
 
             Toggle.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    Linux:ApplyRippleEffect(Toggle)
                     State = not State
                     UpdateToggle()
                     spawn(function() Linux:SafeCallback(config.Callback, State) end)
@@ -661,18 +760,23 @@ function Linux.Create(config)
             local Dropdown = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 30),
                 ZIndex = 2,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = Dropdown,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(Dropdown, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(Dropdown, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(Dropdown, Linux.Theme.Border, 1, 0.3)
+            Linux:ApplyHoverEffect(Dropdown, Linux.Theme.Accent, Linux.Theme.Element, 2)
 
             local Label = Linux.Instance("TextLabel", {
                 Parent = Dropdown,
@@ -712,22 +816,26 @@ function Linux.Create(config)
             local DropFrame = Linux.Instance("ScrollingFrame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 0),
                 CanvasSize = UDim2.new(0, 0, 0, 0),
                 AutomaticCanvasSize = Enum.AutomaticSize.Y,
                 ScrollBarThickness = 0,
                 ClipsDescendants = true,
                 ZIndex = 3,
-                LayoutOrder = elementOrder + 1,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder + 1
             })
 
             Linux.Instance("UICorner", {
                 Parent = DropFrame,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(DropFrame, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(DropFrame, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(DropFrame, Linux.Theme.Border, 1, 0.3)
 
             local DropLayout = Linux.Instance("UIListLayout", {
                 Parent = DropFrame,
@@ -778,7 +886,6 @@ function Linux.Create(config)
                         local OptBtn = Linux.Instance("TextButton", {
                             Parent = DropFrame,
                             BackgroundColor3 = Linux.Theme.DropdownOption,
-                            BackgroundTransparency = Linux.Theme.ElementTransparency,
                             Size = UDim2.new(1, -5, 0, 25),
                             Font = Enum.Font.SourceSans,
                             Text = tostring(opt),
@@ -786,9 +893,7 @@ function Linux.Create(config)
                             TextSize = 14,
                             TextXAlignment = Enum.TextXAlignment.Left,
                             ZIndex = 3,
-                            AutoButtonColor = false,
-                            BorderColor3 = Linux.Theme.InElementBorder,
-                            BorderSizePixel = 1
+                            AutoButtonColor = false
                         })
 
                         Linux.Instance("UICorner", {
@@ -796,7 +901,16 @@ function Linux.Create(config)
                             CornerRadius = UDim.new(0, 4)
                         })
 
+                        Linux:ApplyShadow(OptBtn, Linux.Theme.Shadow, 2, 0.7)
+                        Linux:ApplyGradient(OptBtn, ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, Linux.Theme.DropdownOption),
+                            ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.DropdownOption, 0.9))
+                        }), 90)
+                        Linux:ApplyBorder(OptBtn, Linux.Theme.Border, 1, 0.3)
+                        Linux:ApplyHoverEffect(OptBtn, Linux.Theme.Accent, Linux.Theme.DropdownOption, 2)
+
                         OptBtn.MouseButton1Click:Connect(function()
+                            Linux:ApplyRippleEffect(OptBtn)
                             SelectedValue = opt
                             Selected.Text = tostring(opt)
                             for _, btn in pairs(DropFrame:GetChildren()) do
@@ -817,6 +931,7 @@ function Linux.Create(config)
 
             Dropdown.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    Linux:ApplyRippleEffect(Dropdown)
                     IsOpen = not IsOpen
                     PopulateOptions()
                 end
@@ -855,18 +970,23 @@ function Linux.Create(config)
             local MultiDropdown = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 30),
                 ZIndex = 2,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = MultiDropdown,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(MultiDropdown, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(MultiDropdown, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(MultiDropdown, Linux.Theme.Border, 1, 0.3)
+            Linux:ApplyHoverEffect(MultiDropdown, Linux.Theme.Accent, Linux.Theme.Element, 2)
 
             local Label = Linux.Instance("TextLabel", {
                 Parent = MultiDropdown,
@@ -906,22 +1026,26 @@ function Linux.Create(config)
             local DropFrame = Linux.Instance("ScrollingFrame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 0),
                 CanvasSize = UDim2.new(0, 0, 0, 0),
                 AutomaticCanvasSize = Enum.AutomaticSize.Y,
                 ScrollBarThickness = 0,
                 ClipsDescendants = true,
                 ZIndex = 3,
-                LayoutOrder = elementOrder + 1,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder + 1
             })
 
             Linux.Instance("UICorner", {
                 Parent = DropFrame,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(DropFrame, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(DropFrame, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(DropFrame, Linux.Theme.Border, 1, 0.3)
 
             local DropLayout = Linux.Instance("UIListLayout", {
                 Parent = DropFrame,
@@ -980,7 +1104,6 @@ function Linux.Create(config)
                         local OptBtn = Linux.Instance("TextButton", {
                             Parent = DropFrame,
                             BackgroundColor3 = Linux.Theme.DropdownOption,
-                            BackgroundTransparency = Linux.Theme.ElementTransparency,
                             Size = UDim2.new(1, -5, 0, 25),
                             Font = Enum.Font.SourceSans,
                             Text = tostring(opt),
@@ -988,9 +1111,7 @@ function Linux.Create(config)
                             TextSize = 14,
                             TextXAlignment = Enum.TextXAlignment.Left,
                             ZIndex = 3,
-                            AutoButtonColor = false,
-                            BorderColor3 = Linux.Theme.InElementBorder,
-                            BorderSizePixel = 1
+                            AutoButtonColor = false
                         })
 
                         Linux.Instance("UICorner", {
@@ -998,7 +1119,16 @@ function Linux.Create(config)
                             CornerRadius = UDim.new(0, 4)
                         })
 
+                        Linux:ApplyShadow(OptBtn, Linux.Theme.Shadow, 2, 0.7)
+                        Linux:ApplyGradient(OptBtn, ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, Linux.Theme.DropdownOption),
+                            ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.DropdownOption, 0.9))
+                        }), 90)
+                        Linux:ApplyBorder(OptBtn, Linux.Theme.Border, 1, 0.3)
+                        Linux:ApplyHoverEffect(OptBtn, Linux.Theme.Accent, Linux.Theme.DropdownOption, 2)
+
                         OptBtn.MouseButton1Click:Connect(function()
+                            Linux:ApplyRippleEffect(OptBtn)
                             if table.find(SelectedValues, opt) then
                                 for i, v in ipairs(SelectedValues) do
                                     if v == opt then
@@ -1024,6 +1154,7 @@ function Linux.Create(config)
 
             MultiDropdown.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    Linux:ApplyRippleEffect(MultiDropdown)
                     IsOpen = not IsOpen
                     PopulateOptions()
                 end
@@ -1056,18 +1187,23 @@ function Linux.Create(config)
             local Slider = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 40),
                 ZIndex = 1,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = Slider,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(Slider, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(Slider, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(Slider, Linux.Theme.Border, 1, 0.3)
+            Linux:ApplyHoverEffect(Slider, Linux.Theme.Accent, Linux.Theme.Element, 2)
 
             local Label = Linux.Instance("TextLabel", {
                 Parent = Slider,
@@ -1100,9 +1236,7 @@ function Linux.Create(config)
                 BackgroundColor3 = Linux.Theme.Toggle,
                 Size = UDim2.new(1, -10, 0, 6),
                 Position = UDim2.new(0, 5, 0, 28),
-                ZIndex = 1,
-                BorderColor3 = Linux.Theme.InElementBorder,
-                BorderSizePixel = 1
+                ZIndex = 1
             })
 
             Linux.Instance("UICorner", {
@@ -1110,13 +1244,14 @@ function Linux.Create(config)
                 CornerRadius = UDim.new(1, 0)
             })
 
+            Linux:ApplyBorder(SliderBar, Linux.Theme.Border, 1, 0.3)
+
             local FillBar = Linux.Instance("Frame", {
                 Parent = SliderBar,
                 BackgroundColor3 = Linux.Theme.Accent,
                 Size = UDim2.new(0, 0, 1, 0),
                 Position = UDim2.new(0, 0, 0, 0),
-                ZIndex = 1,
-                BorderSizePixel = 0
+                ZIndex = 1
             })
 
             Linux.Instance("UICorner", {
@@ -1124,20 +1259,25 @@ function Linux.Create(config)
                 CornerRadius = UDim.new(1, 0)
             })
 
+            Linux:ApplyGradient(FillBar, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Accent),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Accent, 0.9))
+            }), 90)
+
             local Knob = Linux.Instance("Frame", {
                 Parent = SliderBar,
                 BackgroundColor3 = Color3.fromRGB(255, 255, 250),
                 Size = UDim2.new(0, 12, 0, 12),
                 Position = UDim2.new(0, 0, 0, -3),
-                ZIndex = 2,
-                BorderColor3 = Linux.Theme.InElementBorder,
-                BorderSizePixel = 1
+                ZIndex = 2
             })
 
             Linux.Instance("UICorner", {
                 Parent = Knob,
                 CornerRadius = UDim.new(1, 0)
             })
+
+            Linux:ApplyShadow(Knob, Linux.Theme.Shadow, 2, 0.7)
 
             local Min = config.Min or 0
             local Max = config.Max or 100
@@ -1200,18 +1340,23 @@ function Linux.Create(config)
             local Input = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 30),
                 ZIndex = 1,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = Input,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(Input, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(Input, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(Input, Linux.Theme.Border, 1, 0.3)
+            Linux:ApplyHoverEffect(Input, Linux.Theme.Accent, Linux.Theme.Element, 2)
 
             local Label = Linux.Instance("TextLabel", {
                 Parent = Input,
@@ -1242,15 +1387,20 @@ function Linux.Create(config)
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false,
                 ClipsDescendants = true,
-                ZIndex = 2,
-                BorderColor3 = Linux.Theme.InElementBorder,
-                BorderSizePixel = 1
+                ZIndex = 2
             })
 
             Linux.Instance("UICorner", {
                 Parent = TextBox,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(TextBox, Linux.Theme.Shadow, 2, 0.7)
+            Linux:ApplyGradient(TextBox, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Toggle),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Toggle, 0.9))
+            }), 90)
+            Linux:ApplyBorder(TextBox, Linux.Theme.Border, 1, 0.3)
 
             local MaxLength = 50
 
@@ -1302,18 +1452,22 @@ function Linux.Create(config)
             local LabelFrame = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 30),
                 ZIndex = 1,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = LabelFrame,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(LabelFrame, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(LabelFrame, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(LabelFrame, Linux.Theme.Border, 1, 0.3)
 
             local LabelText = Linux.Instance("TextLabel", {
                 Parent = LabelFrame,
@@ -1371,18 +1525,23 @@ function Linux.Create(config)
             local Keybind = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 30),
                 ZIndex = 1,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = Keybind,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(Keybind, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(Keybind, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(Keybind, Linux.Theme.Border, 1, 0.3)
+            Linux:ApplyHoverEffect(Keybind, Linux.Theme.Accent, Linux.Theme.Element, 2)
 
             local Label = Linux.Instance("TextLabel", {
                 Parent = Keybind,
@@ -1411,15 +1570,20 @@ function Linux.Create(config)
                 TextXAlignment = Enum.TextXAlignment.Center,
                 ClipsDescendants = true,
                 ZIndex = 2,
-                AutoButtonColor = false,
-                BorderColor3 = Linux.Theme.InElementBorder,
-                BorderSizePixel = 1
+                AutoButtonColor = false
             })
 
             Linux.Instance("UICorner", {
                 Parent = KeyBox,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(KeyBox, Linux.Theme.Shadow, 2, 0.7)
+            Linux:ApplyGradient(KeyBox, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Toggle),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Toggle, 0.9))
+            }), 90)
+            Linux:ApplyBorder(KeyBox, Linux.Theme.Border, 1, 0.3)
 
             local Mode = config.Mode or "Hold"
             local CurrentKey = config.Default or nil
@@ -1447,6 +1611,7 @@ function Linux.Create(config)
             end
 
             KeyBox.MouseButton1Click:Connect(function()
+                Linux:ApplyRippleEffect(KeyBox)
                 if not IsBinding then
                     IsBinding = true
                     KeyBox.Text = "..."
@@ -1454,6 +1619,7 @@ function Linux.Create(config)
             end)
 
             KeyBox.MouseButton2Click:Connect(function()
+                Linux:ApplyRippleEffect(KeyBox)
                 CurrentKey = nil
                 IsBinding = false
                 UpdateKeyText()
@@ -1540,18 +1706,22 @@ function Linux.Create(config)
             local ColorPicker = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 80),
                 ZIndex = 1,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = ColorPicker,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(ColorPicker, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(ColorPicker, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(ColorPicker, Linux.Theme.Border, 1, 0.3)
 
             local Label = Linux.Instance("TextLabel", {
                 Parent = ColorPicker,
@@ -1571,15 +1741,16 @@ function Linux.Create(config)
                 BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                 Size = UDim2.new(0, 20, 0, 20),
                 Position = UDim2.new(1, -25, 0, 5),
-                ZIndex = 1,
-                BorderColor3 = Linux.Theme.InElementBorder,
-                BorderSizePixel = 1
+                ZIndex = 1
             })
 
             Linux.Instance("UICorner", {
                 Parent = ColorPreview,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(ColorPreview, Linux.Theme.Shadow, 2, 0.7)
+            Linux:ApplyBorder(ColorPreview, Linux.Theme.Border, 1, 0.3)
 
             local Palette = Linux.Instance("ImageButton", {
                 Parent = ColorPicker,
@@ -1588,9 +1759,7 @@ function Linux.Create(config)
                 Position = UDim2.new(0, 5, 0, 25),
                 Image = "rbxassetid://698052001",
                 ZIndex = 1,
-                AutoButtonColor = false,
-                BorderColor3 = Linux.Theme.InElementBorder,
-                BorderSizePixel = 1
+                AutoButtonColor = false
             })
 
             Linux.Instance("UICorner", {
@@ -1598,20 +1767,23 @@ function Linux.Create(config)
                 CornerRadius = UDim.new(0, 4)
             })
 
+            Linux:ApplyShadow(Palette, Linux.Theme.Shadow, 2, 0.7)
+            Linux:ApplyBorder(Palette, Linux.Theme.Border, 1, 0.3)
+
             local PaletteKnob = Linux.Instance("Frame", {
                 Parent = Palette,
                 BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                 Size = UDim2.new(0, 8, 0, 8),
                 Position = UDim2.new(1, -4, 1, -4),
-                ZIndex = 2,
-                BorderColor3 = Linux.Theme.InElementBorder,
-                BorderSizePixel = 1
+                ZIndex = 2
             })
 
             Linux.Instance("UICorner", {
                 Parent = PaletteKnob,
                 CornerRadius = UDim.new(1, 0)
             })
+
+            Linux:ApplyShadow(PaletteKnob, Linux.Theme.Shadow, 2, 0.7)
 
             local Hue = 0
             local Saturation = 1
@@ -1682,19 +1854,23 @@ function Linux.Create(config)
             local ParagraphFrame = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.Y,
                 ZIndex = 1,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = ParagraphFrame,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(ParagraphFrame, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(ParagraphFrame, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(ParagraphFrame, Linux.Theme.Border, 1, 0.3)
 
             local Title = Linux.Instance("TextLabel", {
                 Parent = ParagraphFrame,
@@ -1749,18 +1925,22 @@ function Linux.Create(config)
             local NotificationFrame = Linux.Instance("Frame", {
                 Parent = ElementContainer,
                 BackgroundColor3 = Linux.Theme.Element,
-                BackgroundTransparency = Linux.Theme.ElementTransparency,
                 Size = UDim2.new(1, -5, 0, 30),
                 ZIndex = 1,
-                LayoutOrder = elementOrder,
-                BorderColor3 = Linux.Theme.ElementBorder,
-                BorderSizePixel = 1
+                LayoutOrder = elementOrder
             })
 
             Linux.Instance("UICorner", {
                 Parent = NotificationFrame,
                 CornerRadius = UDim.new(0, 4)
             })
+
+            Linux:ApplyShadow(NotificationFrame, Linux.Theme.Shadow, 3, 0.6)
+            Linux:ApplyGradient(NotificationFrame, ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Linux.Theme.Element),
+                ColorSequenceKeypoint.new(1, DarkenColor(Linux.Theme.Element, 0.9))
+            }), 90)
+            Linux:ApplyBorder(NotificationFrame, Linux.Theme.Border, 1, 0.3)
 
             local Label = Linux.Instance("TextLabel", {
                 Parent = NotificationFrame,
