@@ -57,7 +57,6 @@ function Linux:SafeCallback(Function, ...)
     if not Function then
         return
     end
-
     local Success, Error = pcall(Function, ...)
     if not Success then
         self:Notify({
@@ -712,15 +711,17 @@ function Linux.Create(config)
             local DropPadding = Linux.Instance("UIPadding", {
                 Parent = DropFrame,
                 PaddingLeft = UDim.new(0, 5),
-                PaddingTop = UDim.new(0, 5)
+                PaddingTop = UDim.new(0, 5),
+                PaddingBottom = UDim.new(0, 5)
             })
 
-            Linux.Instance("UICorner", {
+            local DropFrameCorner = Linux.Instance("UICorner", {
                 Parent = DropFrame,
-                CornerRadius = UDim.new(0, 4)
+                CornerRadius = UDim.new(0, 8)
             })
-            Linux:ApplyBorder(DropFrame)
-            Linux:ApplySecondaryBorder(DropFrame)
+
+            local DropFrameBorder = Linux:ApplyBorder(DropFrame)
+            local DropFrameSecondaryBorder = Linux:ApplySecondaryBorder(DropFrame)
 
             local Options = config.Options or {}
             local IsOpen = false
@@ -730,9 +731,10 @@ function Linux.Create(config)
                 local optionHeight = 28
                 local paddingBetween = 2
                 local paddingTop = 5
+                local paddingBottom = 5
                 local maxHeight = 150
                 local numOptions = #Options
-                local calculatedHeight = numOptions * optionHeight + (numOptions - 1) * paddingBetween + paddingTop
+                local calculatedHeight = numOptions * optionHeight + (numOptions - 1) * paddingBetween + paddingTop + paddingBottom
                 local finalHeight = math.min(calculatedHeight, maxHeight)
                 if finalHeight < 0 then finalHeight = 0 end
 
@@ -769,6 +771,7 @@ function Linux.Create(config)
                             TextColor3 = opt == SelectedValue and Linux.Theme.Accent or Linux.Theme.Text,
                             TextSize = 14,
                             TextXAlignment = Enum.TextXAlignment.Left,
+                            ClipsDescendants = true,
                             ZIndex = 3,
                             AutoButtonColor = false
                         })
@@ -908,15 +911,17 @@ function Linux.Create(config)
             local DropPadding = Linux.Instance("UIPadding", {
                 Parent = DropFrame,
                 PaddingLeft = UDim.new(0, 5),
-                PaddingTop = UDim.new(0, 5)
+                PaddingTop = UDim.new(0, 5),
+                PaddingBottom = UDim.new(0, 5)
             })
 
-            Linux.Instance("UICorner", {
+            local DropFrameCorner = Linux.Instance("UICorner", {
                 Parent = DropFrame,
-                CornerRadius = UDim.new(0, 4)
+                CornerRadius = UDim.new(0, 8)
             })
-            Linux:ApplyBorder(DropFrame)
-            Linux:ApplySecondaryBorder(DropFrame)
+
+            local DropFrameBorder = Linux:ApplyBorder(DropFrame)
+            local DropFrameSecondaryBorder = Linux:ApplySecondaryBorder(DropFrame)
 
             local Options = config.Options or {}
             local IsOpen = false
@@ -926,10 +931,11 @@ function Linux.Create(config)
                 local optionHeight = 28
                 local paddingBetween = 2
                 local paddingTop = 5
+                local paddingBottom = 5
                 local maxHeight = 150
                 local numOptions = #Options
-                local calculatedHeight = numOptions * optionHeight + (numOptions - 1) * paddingBetween + paddingTop
-                finalHeight = math.min(calculatedHeight, maxHeight)
+                local calculatedHeight = numOptions * optionHeight + (numOptions - 1) * paddingBetween + paddingTop + paddingBottom
+                local finalHeight = math.min(calculatedHeight, maxHeight)
                 if finalHeight < 0 then finalHeight = 0 end
 
                 local tween = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
@@ -973,6 +979,7 @@ function Linux.Create(config)
                             TextColor3 = table.find(SelectedValues, opt) and Linux.Theme.Accent or Linux.Theme.Text,
                             TextSize = 14,
                             TextXAlignment = Enum.TextXAlignment.Left,
+                            ClipsDescendants = true,
                             ZIndex = 3,
                             AutoButtonColor = false
                         })
@@ -1212,8 +1219,8 @@ function Linux.Create(config)
             local TextBox = Linux.Instance("TextBox", {
                 Parent = Input,
                 BackgroundColor3 = Linux.Theme.Toggle,
-                Size = UDim2.new(0.5, -10, 0, 24),
-                Position = UDim2.new(0.5, 5, 0.5, -12),
+                Size = UDim2.new(0.3, -10, 0, 24),
+                Position = UDim2.new(0.7, 5, 0.5, -12),
                 Font = Enum.Font.SourceSans,
                 Text = config.Default or "",
                 PlaceholderText = config.Placeholder or "Text Here",
